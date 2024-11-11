@@ -14,7 +14,7 @@ from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
 from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.lora_utils import merge_lora, unmerge_lora
-from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
+from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid, ASPECT_RATIO_512, get_closest_ratio, to_pil
 from huggingface_hub import HfApi, HfFolder
 
 # Low GPU memory mode
@@ -71,7 +71,8 @@ def generate(input):
     guidance_scale = values.get("guidance_scale", 6.0)
     seed = values.get("seed", 42)
     num_inference_steps = values.get("num_inference_steps", 50)
-    sample_size = values.get("sample_size", [384, 672])
+    base_resolution = values.get("base_resolution", 512)
+    
     video_length = values.get("video_length", 53)
     fps = values.get("fps", 10)
     lora_weight = values.get("lora_weight", 1.00)
@@ -82,7 +83,12 @@ def generate(input):
     validation_image_end = values.get("validation_image_end", None)
     
     generator = torch.Generator(device="cuda").manual_seed(seed)
-
+    aspect_ratio_sample_size = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
+    start_img = Image.open(validation_image_start)
+    original_width, original_height = start_img[0].size if isinstance(start_img, list) else Image.open(start_img).size
+    closest_size, closest_ratio = get_closest_ratio(original_height, original_width, ratios=aspect_ratio_sample_size)
+    height, width = [int(x / 16) * 16 for x in closest_size]
+    sample_size = [height, width]
     if partial_video_length is not None:
         # Handle ultra-long video generation if required
         # ... (existing logic for partial video generation)
