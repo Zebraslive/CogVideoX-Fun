@@ -85,7 +85,7 @@ def generate(input):
     generator = torch.Generator(device="cuda").manual_seed(seed)
     aspect_ratio_sample_size = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
     start_img = Image.open(validation_image_start)
-    original_width, original_height = start_img[0].size if isinstance(start_img, list) else Image.open(start_img).size
+    original_width, original_height = start_img.size
     closest_size, closest_ratio = get_closest_ratio(original_height, original_width, ratios=aspect_ratio_sample_size)
     height, width = [int(x / 16) * 16 for x in closest_size]
     sample_size = [height, width]
